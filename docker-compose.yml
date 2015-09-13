@@ -1,0 +1,15 @@
+app:
+   build: .
+   command: node index.js
+   links:
+      - elasticsearch
+   volumes:
+      - .:/var/espg
+
+elasticsearch:
+   image: elasticsearch
+   environment:
+      - ELASTICSEARCH_USER=user
+      - ELASTICSEARCH_PASS=password
+   ports:
+      - 9200:9200
