@@ -19,6 +19,7 @@ clientP
             }).then(function (resp) {
                 console.log('resp', resp);
                 var esterms = resp.term_vectors.text.terms;
+                
                 var terms = Object.keys(esterms);
                 var termsWithFreq = terms.map(function(t){
                     var freq = esterms[t].term_freq;
@@ -34,7 +35,7 @@ clientP
                 });
                 // now they're sorted
 
-                var relevantTerms = termsWithFreq.slice(0, 100);
+                var relevantTerms = termsWithFreq.slice(0, 20);
 
 
                 console.log('termsWithFreq', JSON.stringify(relevantTerms, null, 3));
