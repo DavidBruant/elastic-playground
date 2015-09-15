@@ -1,6 +1,6 @@
 app:
    build: .
-   command: node problem1.js
+   command: node problem2.js
    links:
       - elasticsearch
    volumes:
