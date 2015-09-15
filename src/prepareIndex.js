@@ -7,8 +7,7 @@ var promisify = require('es6-promisify');
 
 var elasticsearch = require('elasticsearch');
 
-var INDEX_NAME = "espg";
-var TYPE_NAME = "espg_doc";
+
 
 var client = new elasticsearch.Client({
     host: 'elasticsearch:9200',
@@ -17,59 +16,7 @@ var client = new elasticsearch.Client({
 });
 
 
-var mapping = {
-    "settings": {
-        "analysis": {
-            "filter": {
-                "english_stop": {
-                    "type": "stop",
-                    "stopwords": "_english_"
-                },
-                "english_more_stem_stop": {
-                    "type": "stop",
-                    //"stopwords": []
-                    "stopwords": ["web", "pattern", "book", "we"]
-                },
-                /*"english_keywords": {
-                    "type": "keyword_marker",
-                    "keywords": []
-                },*/
-                "english_stemmer": {
-                    "type": "stemmer",
-                    "language": "english"
-                },
-                "english_possessive_stemmer": {
-                    "type": "stemmer",
-                    "language": "possessive_english"
-                }
-            },
-            "analyzer": {
-                "english_more_stop": {
-                    "tokenizer": "standard",
-                    "filter": [
-                        "english_possessive_stemmer",
-                        "lowercase",
-                        "english_stop",
-                        //"english_keywords",
-                        "english_stemmer",
-                        "english_more_stem_stop" // after stemmer so it applies to stemmed items
-                      ]
-                }
-            }
-        }
-    },
 
-    "mappings": {
-        "espg_doc": {
-            properties: {
-                "text": {
-                    "type": "string",
-                    "analyzer": "english_more_stop"
-                }
-            }
-        }
-    }
-};
 
 
 function connect() {
@@ -119,11 +66,11 @@ function createIndex(client, name, mapping) {
     });
 }
 
-function indexDocument(client, indexName, id, data) {
+function indexDocument(client, indexName, typeName, id, data) {
     return new Promise(function (resolve, reject) {
         client.index({
             index: indexName,
-            type: TYPE_NAME,
+            type: typeName,
             id: id,
             body: data
         }, function (error, res) {
@@ -160,11 +107,11 @@ function getAllTexts() {
     })
 }
 
-function loadAllDocuments(client) {
+function loadAllDocuments(client, indexName, typeName) {
     return getAllTexts()
         .then(function (docs) {
             return Promise.all(docs.map(function (d) {
-                return indexDocument(client, INDEX_NAME, d.name, {
+                return indexDocument(client, indexName, typeName, d.name, {
                     text: d.text
                 })
             }))
@@ -187,14 +134,16 @@ function refreshIndex(client, name) {
 
 var U = undefined;
 
-module.exports = connect()
-    .then(function (client) {
+module.exports = function(indexName, docType, settings){
+    
+    return connect().then(function (client) {
         console.log('Connected to ES');
-        return deleteIndex(client, INDEX_NAME)
-            .then(createIndex.bind(U, client, INDEX_NAME, mapping))
-            .then(loadAllDocuments.bind(U, client, INDEX_NAME))
-            .then(refreshIndex.bind(U, client, INDEX_NAME))
+        return deleteIndex(client, indexName)
+            .then(createIndex.bind(U, client, indexName, settings))
+            .then(loadAllDocuments.bind(U, client, indexName, docType))
+            .then(refreshIndex.bind(U, client, indexName))
             .then(function () {
                 return client;
             })
     })
+}
